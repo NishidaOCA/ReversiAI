@@ -1,0 +1,78 @@
+# 置けるマスのハイライト機能の実装記録
+
+## 実装日時
+2025年8月2日
+
+## 作業時間
+約15分
+
+## 更新履歴
+1. 初回実装 (15分)
+2. ハイライトの回転調整とStart時の表示追加 (5分)
+   - ハイライトプレハブのRotation.xを90度に設定
+   - Start時にUpdateCanPutを呼び出し追加
+
+## ブランチ
+feature/develop/#q1_highlight
+
+## 実装内容
+1. ハイライト用のプレハブ参照の追加
+   - `[SerializeField] private GameObject _highlightPrefab`を追加
+   - インスペクターから設定可能に
+
+2. ハイライトオブジェクト管理用のリストを追加
+   - `private List<GameObject> _highlightObjects`を追加
+   - 生成したハイライトオブジェクトを管理
+
+3. UpdateCanPut メソッドの拡張
+   - 既存のハイライトをすべて削除
+   - 新しい置けるマスにハイライトを表示
+   - ハイライトの位置は石と同じ計算式を使用（y座標を0.01fに設定）
+
+## 更新タイミング
+- ゲーム開始時
+- 石を置いた後
+- プレイヤーとAIのターン切り替え時
+
+## 必要な作業
+1. ハイライト用の半透明な板などのプレハブを作成
+2. GameControllerのインスペクターで_highlightPrefabを設定
+
+## コード変更内容
+```csharp
+// 変数の追加
+[SerializeField]
+private GameObject _highlightPrefab = default;
+private List<GameObject> _highlightObjects = new List<GameObject>();
+
+// UpdateCanPutメソッドの拡張
+private void UpdateCanPut()
+{
+    _canPutMass.Clear();
+    // ハイライトを全て削除
+    foreach (var highlight in _highlightObjects)
+    {
+        Destroy(highlight);
+    }
+    _highlightObjects.Clear();
+
+    for (int y = 0; y < 8; y++)
+    {
+        for (int x = 0; x < 8; x++)
+        {
+            if (_massObjects[y, x] == default)
+            {
+                if (CanReverse(new Vector2Int(x, y), _isPlayerTurn ? MassState.WHITE : MassState.BLACK))
+                {
+                    _canPutMass.Add(new Vector2Int(x, y));
+                    // ハイライトを追加
+                    var highlight = Instantiate(_highlightPrefab,
+                        new Vector3(x * 1.1f - 3.85f, 0.01f, -y * 1.1f + 3.85f),
+                        Quaternion.Euler(90f, 0f, 0f));
+                    _highlightObjects.Add(highlight);
+                }
+            }
+        }
+    }
+}
+```
