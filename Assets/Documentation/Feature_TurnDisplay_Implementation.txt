@@ -1,0 +1,68 @@
+# ターン表示機能の実装記録
+
+## 実装日時
+2025年8月2日
+
+## 作業時間
+約10分
+
+## ブランチ
+feature/develop/#q2_displayturn
+
+## 実装内容
+1. TextMeshProUGUIコンポーネント参照の追加
+   - `[SerializeField] private TextMeshProUGUI _turnText`を追加
+   - インスペクターから設定可能に
+
+2. ターン表示更新機能の追加
+   - `UpdateTurnText`メソッドを追加
+   - プレイヤーのターン: "あなたのターン"
+   - AIのターン: "AIのターン"
+
+3. 更新タイミングの実装
+   - ゲーム開始時
+   - プレイヤーが石を置いた後
+   - AIが石を置いた後
+
+## 更新タイミング
+- ゲーム開始時（Start）
+- 石を置いた後（プレイヤー、AI共に）
+- ターン切り替え時
+
+## 必要な作業
+1. UIにTextMeshProUGUIコンポーネントを配置
+2. GameControllerのインスペクターで_turnTextを設定
+
+## コード変更内容
+```csharp
+// using追加
+using TMPro;
+
+// 変数の追加
+[SerializeField]
+private TextMeshProUGUI _turnText = default;
+
+// UpdateTurnTextメソッドの追加
+private void UpdateTurnText()
+{
+    _turnText.text = _isPlayerTurn ? "あなたのターン" : "AIのターン";
+}
+
+// 呼び出し箇所
+void Start()
+{
+    // 既存の処理
+    UpdateTurnText(); // 初期状態でのターン表示
+}
+
+// Update内のターン切り替え時
+_isPlayerTurn = !_isPlayerTurn;
+UpdateCanPut();
+UpdateTurnText(); // ターン表示の更新
+```
+
+## テスト項目
+- [ ] ゲーム開始時に正しくターンが表示されるか
+- [ ] プレイヤーが石を置いた後、正しくターンが切り替わって表示されるか
+- [ ] AIが石を置いた後、正しくターンが切り替わって表示されるか
+- [ ] テキストが見やすい位置に表示されているか
