@@ -28,7 +28,10 @@ public class GameController : MonoBehaviour
     private TextMeshProUGUI _turnText = default;
     [SerializeField]
     private TextMeshProUGUI _stoneCountText = default;
+    [SerializeField]
+    private TextMeshProUGUI _resultText = default;
     private bool _isPlayerTurn = true;
+    private bool _isGameOver = false;
     private List<Vector2Int> _canPutMass = new List<Vector2Int>(16);
     private List<GameObject> _highlightObjects = new List<GameObject>();
     void Start()
@@ -40,9 +43,12 @@ public class GameController : MonoBehaviour
         UpdateCanPut(); // 初期状態でのハイライトを表示
         UpdateTurnText(); // 初期状態でのターン表示
         UpdateStoneCount(); // 初期状態での石の数を表示
+        _resultText.gameObject.SetActive(false); // 結果テキストを非表示に
     }
     void Update()
     {
+        if (_isGameOver) return;
+        
         if (!_isPlayerTurn)
         {
             var r = UnityEngine.Random.Range(0, _canPutMass.Count);
@@ -211,15 +217,23 @@ public class GameController : MonoBehaviour
             Destroy(highlight);
         }
         _highlightObjects.Clear();
+        
+        // 現在のターンのプレイヤーが置ける場所を探す
+        bool currentPlayerCanMove = false;
+        bool opponentCanMove = false;
+        MassState currentColor = _isPlayerTurn ? MassState.WHITE : MassState.BLACK;
+        MassState opponentColor = _isPlayerTurn ? MassState.BLACK : MassState.WHITE;
 
+        // 両プレイヤーの置ける場所を確認
         for (int y = 0; y < 8; y++)
         {
             for (int x = 0; x < 8; x++)
             {
                 if (_massObjects[y, x] == default)
                 {
-                    if (CanReverse(new Vector2Int(x, y), _isPlayerTurn ? MassState.WHITE : MassState.BLACK))
+                    if (CanReverse(new Vector2Int(x, y), currentColor))
                     {
+                        currentPlayerCanMove = true;
                         _canPutMass.Add(new Vector2Int(x, y));
                         // ハイライトを追加
                         var highlight = Instantiate(_highlightPrefab,
@@ -227,8 +241,53 @@ public class GameController : MonoBehaviour
                             Quaternion.Euler(90f, 0f, 0f));
                         _highlightObjects.Add(highlight);
                     }
+                    if (CanReverse(new Vector2Int(x, y), opponentColor))
+                    {
+                        opponentCanMove = true;
+                    }
                 }
             }
+        }
+
+        // ゲーム終了判定
+        if (!currentPlayerCanMove && !opponentCanMove)
+        {
+            _isGameOver = true;
+            int whiteCount = 0;
+            int blackCount = 0;
+            
+            // 最終的な石の数を数える
+            for (int y = 0; y < 8; y++)
+            {
+                for (int x = 0; x < 8; x++)
+                {
+                    if (_massObjects[y, x] != default)
+                    {
+                        if (_massObjects[y, x].State == MassState.WHITE)
+                            whiteCount++;
+                        else if (_massObjects[y, x].State == MassState.BLACK)
+                            blackCount++;
+                    }
+                }
+            }
+            
+            // 勝敗判定と結果表示
+            _resultText.gameObject.SetActive(true); // 結果テキストを表示
+            if (whiteCount > blackCount)
+                _resultText.text = "あなたの勝ちです！";
+            else if (blackCount > whiteCount)
+                _resultText.text = "AIの勝ちです";
+            else
+                _resultText.text = "引き分けです";
+            
+            _turnText.text = "ゲーム終了";
+        }
+        else if (!currentPlayerCanMove)
+        {
+            // 現在のプレイヤーが置ける場所がない場合はターンを変更
+            _isPlayerTurn = !_isPlayerTurn;
+            UpdateTurnText();
+            UpdateCanPut();
         }
     }
 }
