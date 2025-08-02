@@ -21,14 +21,18 @@ public class GameController : MonoBehaviour
 
     [SerializeField]
     private GameObject _stonePrefab = default;
+    [SerializeField]
+    private GameObject _highlightPrefab = default;
     private bool _isPlayerTurn = true;
     private List<Vector2Int> _canPutMass = new List<Vector2Int>(16);
+    private List<GameObject> _highlightObjects = new List<GameObject>();
     void Start()
     {
         PutStone(new Vector2Int(3, 3), MassState.WHITE);
         PutStone(new Vector2Int(4, 3), MassState.BLACK);
         PutStone(new Vector2Int(3, 4), MassState.BLACK);
         PutStone(new Vector2Int(4, 4), MassState.WHITE);
+        UpdateCanPut(); // 初期状態でのハイライトを表示
     }
     void Update()
     {
@@ -162,6 +166,13 @@ public class GameController : MonoBehaviour
     private void UpdateCanPut()
     {
         _canPutMass.Clear();
+        // ハイライトを全て削除
+        foreach (var highlight in _highlightObjects)
+        {
+            Destroy(highlight);
+        }
+        _highlightObjects.Clear();
+
         for (int y = 0; y < 8; y++)
         {
             for (int x = 0; x < 8; x++)
@@ -171,6 +182,11 @@ public class GameController : MonoBehaviour
                     if (CanReverse(new Vector2Int(x, y), _isPlayerTurn ? MassState.WHITE : MassState.BLACK))
                     {
                         _canPutMass.Add(new Vector2Int(x, y));
+                        // ハイライトを追加
+                        var highlight = Instantiate(_highlightPrefab,
+                            new Vector3(x * 1.1f - 3.85f, 0.01f, -y * 1.1f + 3.85f),
+                            Quaternion.Euler(90f, 0f, 0f));
+                        _highlightObjects.Add(highlight);
                     }
                 }
             }
