@@ -1,0 +1,85 @@
+# 石の数表示機能の実装記録
+
+## 実装日時
+2025年8月2日
+
+## 作業時間
+約10分
+
+## ブランチ
+feature/develop/#q3_stonecount
+
+## 実装内容
+1. TextMeshProUGUIコンポーネント参照の追加
+   - `[SerializeField] private TextMeshProUGUI _stoneCountText`を追加
+   - インスペクターから設定可能に
+
+2. 石の数カウント機能の追加
+   - `UpdateStoneCount`メソッドを追加
+   - 盤面全体をスキャンして白と黒の石の数を集計
+   - "白: X 黒: Y" の形式で表示
+
+3. 更新タイミングの実装
+   - ゲーム開始時
+   - プレイヤーが石を置いた後
+   - AIが石を置いた後
+
+## 更新タイミング
+- ゲーム開始時（Start時）
+- 石を置いた後（プレイヤー、AI共に）
+- ひっくり返し処理の後
+
+## 必要な作業
+1. UIにTextMeshProUGUIコンポーネントを配置
+2. GameControllerのインスペクターで_stoneCountTextを設定
+
+## テスト項目
+- [ ] ゲーム開始時に正しく石の数が表示されるか（白2、黒2）
+- [ ] プレイヤーが石を置いた後、正しく数が更新されるか
+- [ ] AIが石を置いた後、正しく数が更新されるか
+- [ ] ひっくり返した石も正しくカウントされているか
+- [ ] テキストが見やすい位置に表示されているか
+
+## コード変更内容
+```csharp
+// 変数の追加
+[SerializeField]
+private TextMeshProUGUI _stoneCountText = default;
+
+// UpdateStoneCountメソッドの追加
+private void UpdateStoneCount()
+{
+    int whiteCount = 0;
+    int blackCount = 0;
+    
+    // 全マスを走査して石の数を数える
+    for (int y = 0; y < 8; y++)
+    {
+        for (int x = 0; x < 8; x++)
+        {
+            if (_massObjects[y, x] != default)
+            {
+                if (_massObjects[y, x].State == MassState.WHITE)
+                    whiteCount++;
+                else if (_massObjects[y, x].State == MassState.BLACK)
+                    blackCount++;
+            }
+        }
+    }
+    
+    _stoneCountText.text = $"白: {whiteCount}  黒: {blackCount}";
+}
+
+// 呼び出し箇所
+void Start()
+{
+    // 既存の処理
+    UpdateStoneCount(); // 初期状態での石の数を表示
+}
+
+// Update内のターン切り替え時
+_isPlayerTurn = !_isPlayerTurn;
+UpdateCanPut();
+UpdateTurnText();
+UpdateStoneCount(); // 石の数の更新
+```
