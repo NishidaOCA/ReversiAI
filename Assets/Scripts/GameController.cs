@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using TMPro;
+using System.Diagnostics;
 
 public class GameController : MonoBehaviour
 {
@@ -30,10 +31,17 @@ public class GameController : MonoBehaviour
     private TextMeshProUGUI _stoneCountText = default;
     [SerializeField]
     private TextMeshProUGUI _resultText = default;
+    [SerializeField]
+    private TextMeshProUGUI _aiDebugText = default;
     private bool _isPlayerTurn = true;
     private bool _isGameOver = false;
     private List<Vector2Int> _canPutMass = new List<Vector2Int>(16);
     private List<GameObject> _highlightObjects = new List<GameObject>();
+    private MinimaxAI _ai = new MinimaxAI();
+    private int _moveCount = 4; // 初期配置の4つの石
+    private float _aiMoveDelay = 0.5f;  // AIの手を打つまでの待機時間
+    private float _aiMoveTimer = 0f;     // AIの待機時間タイマー
+    private Vector2Int? _pendingAiMove = null;  // 待機中のAIの手
     void Start()
     {
         PutStone(new Vector2Int(3, 3), MassState.WHITE);
@@ -51,15 +59,36 @@ public class GameController : MonoBehaviour
         
         if (!_isPlayerTurn)
         {
-            var r = UnityEngine.Random.Range(0, _canPutMass.Count);
             var color = MassState.BLACK;
-            if (CanPutStone(_canPutMass[r], color))
+
+            if (_pendingAiMove == null)
             {
-                PutStone(_canPutMass[r], color);
-                _isPlayerTurn = !_isPlayerTurn;
-                UpdateCanPut();
-                UpdateTurnText();
-                UpdateStoneCount();
+                // AIに最適な手を選択させる
+                var bestMove = _ai.FindBestMove(CreateBoardState(), _moveCount);
+                if (CanPutStone(bestMove, color))
+                {
+                    // AIの思考過程を表示
+                    if (_aiDebugText != null)
+                        _aiDebugText.text = _ai.DebugInfo;
+
+                    _pendingAiMove = bestMove;
+                    _aiMoveTimer = _aiMoveDelay;
+                }
+            }
+            else
+            {
+                _aiMoveTimer -= Time.deltaTime;
+                if (_aiMoveTimer <= 0)
+                {
+                    // 待機時間が終了したので手を実行
+                    PutStone(_pendingAiMove.Value, color);
+                    _moveCount++;
+                    _isPlayerTurn = !_isPlayerTurn;
+                    UpdateCanPut();
+                    UpdateTurnText();
+                    UpdateStoneCount();
+                    _pendingAiMove = null;
+                }
             }
         }
         else
@@ -82,6 +111,7 @@ public class GameController : MonoBehaviour
                     if (CanPutStone(massPosition, color))
                     {
                         PutStone(massPosition, color);
+                        _moveCount++;
                         _isPlayerTurn = !_isPlayerTurn;
                         UpdateCanPut();
                         UpdateTurnText();
@@ -183,6 +213,22 @@ public class GameController : MonoBehaviour
     private void UpdateTurnText()
     {
         _turnText.text = _isPlayerTurn ? "あなたのターン" : "AIのターン";
+    }
+
+    private MassState[,] CreateBoardState()
+    {
+        var state = new MassState[8, 8];
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (_massObjects[y, x] != default)
+                    state[y, x] = _massObjects[y, x].State;
+                else
+                    state[y, x] = MassState.DEFAULT;
+            }
+        }
+        return state;
     }
 
     private void UpdateStoneCount()
