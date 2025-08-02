@@ -26,6 +26,8 @@ public class GameController : MonoBehaviour
     private GameObject _highlightPrefab = default;
     [SerializeField]
     private TextMeshProUGUI _turnText = default;
+    [SerializeField]
+    private TextMeshProUGUI _stoneCountText = default;
     private bool _isPlayerTurn = true;
     private List<Vector2Int> _canPutMass = new List<Vector2Int>(16);
     private List<GameObject> _highlightObjects = new List<GameObject>();
@@ -37,6 +39,7 @@ public class GameController : MonoBehaviour
         PutStone(new Vector2Int(4, 4), MassState.WHITE);
         UpdateCanPut(); // 初期状態でのハイライトを表示
         UpdateTurnText(); // 初期状態でのターン表示
+        UpdateStoneCount(); // 初期状態での石の数を表示
     }
     void Update()
     {
@@ -50,6 +53,7 @@ public class GameController : MonoBehaviour
                 _isPlayerTurn = !_isPlayerTurn;
                 UpdateCanPut();
                 UpdateTurnText();
+                UpdateStoneCount();
             }
         }
         else
@@ -75,6 +79,7 @@ public class GameController : MonoBehaviour
                         _isPlayerTurn = !_isPlayerTurn;
                         UpdateCanPut();
                         UpdateTurnText();
+                        UpdateStoneCount();
                     }
                 }
             }
@@ -173,6 +178,30 @@ public class GameController : MonoBehaviour
     {
         _turnText.text = _isPlayerTurn ? "あなたのターン" : "AIのターン";
     }
+
+    private void UpdateStoneCount()
+    {
+        int whiteCount = 0;
+        int blackCount = 0;
+        
+        // 全マスを走査して石の数を数える
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (_massObjects[y, x] != default)
+                {
+                    if (_massObjects[y, x].State == MassState.WHITE)
+                        whiteCount++;
+                    else if (_massObjects[y, x].State == MassState.BLACK)
+                        blackCount++;
+                }
+            }
+        }
+        
+        _stoneCountText.text = $"白: {whiteCount}  黒: {blackCount}";
+    }
+
     private void UpdateCanPut()
     {
         _canPutMass.Clear();
