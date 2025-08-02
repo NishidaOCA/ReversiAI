@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using TMPro;
 
 public class GameController : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class GameController : MonoBehaviour
     private GameObject _stonePrefab = default;
     [SerializeField]
     private GameObject _highlightPrefab = default;
+    [SerializeField]
+    private TextMeshProUGUI _turnText = default;
     private bool _isPlayerTurn = true;
     private List<Vector2Int> _canPutMass = new List<Vector2Int>(16);
     private List<GameObject> _highlightObjects = new List<GameObject>();
@@ -33,6 +36,7 @@ public class GameController : MonoBehaviour
         PutStone(new Vector2Int(3, 4), MassState.BLACK);
         PutStone(new Vector2Int(4, 4), MassState.WHITE);
         UpdateCanPut(); // 初期状態でのハイライトを表示
+        UpdateTurnText(); // 初期状態でのターン表示
     }
     void Update()
     {
@@ -45,6 +49,7 @@ public class GameController : MonoBehaviour
                 PutStone(_canPutMass[r], color);
                 _isPlayerTurn = !_isPlayerTurn;
                 UpdateCanPut();
+                UpdateTurnText();
             }
         }
         else
@@ -69,6 +74,7 @@ public class GameController : MonoBehaviour
                         PutStone(massPosition, color);
                         _isPlayerTurn = !_isPlayerTurn;
                         UpdateCanPut();
+                        UpdateTurnText();
                     }
                 }
             }
@@ -162,6 +168,10 @@ public class GameController : MonoBehaviour
     private bool IsInBoard(Vector2Int mass)
     {
         return mass.x >= 0 && mass.y >= 0 && mass.x < 8 && mass.y < 8;
+    }
+    private void UpdateTurnText()
+    {
+        _turnText.text = _isPlayerTurn ? "あなたのターン" : "AIのターン";
     }
     private void UpdateCanPut()
     {
